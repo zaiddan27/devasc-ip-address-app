@@ -1,0 +1,27 @@
+name: Tests
+
+# Runs the project's pytest suite on every push and pull request so broken
+# code never merges into main. Other team members' modules will grow their
+# own tests/test_<module>.py files over time; this workflow just runs
+# `pytest`, which picks all of them up.
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements-dev.txt
+
+      - name: Run tests
+        run: pytest
