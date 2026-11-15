@@ -1,17 +1,20 @@
 """Output formatting and export for IP_PAPI.
 
 Owner: Elijah (branch: feature/ui-output)
-Library: rich (https://rich.readthedocs.io) for colour and layout.
+Library: rich (https://rich.readthedocs.io) for styling and layout.
 
 Front-end note: this module is the "view layer" for the whole app. A bad
 render or a disconnected/non-colour terminal should never crash the menu, so
 every function here falls back to plain print() instead of letting an
 exception escape.
 
-Look ("network console"): calm and dark-terminal friendly, like a router or
-NOC tool. One signal colour (teal) marks the app name, menu numbers and
-success; amber marks informational values such as "N/A"; red is reserved for
-errors. Results are borderless key/value lists so the values carry the screen.
+Look ("paper"): a quiet, editorial, Bauhaus-inspired monochrome. Ink is the
+terminal's own text colour, labels are dimmed, thin rules and gauge tracks
+are a warm taupe, and section labels are letter-spaced small caps. There is
+no bright accent colour: emphasis comes from weight, spacing and inversion
+(errors are shown as an inverted ERROR badge). Because ink is the terminal's
+default colour, the app reads correctly on light and dark terminals; the
+intended demo look is a paper-coloured terminal (see docs/terminal-theme.md).
 """
 
 import csv
@@ -20,30 +23,35 @@ from datetime import datetime
 from pathlib import Path
 
 APP_NAME = "IP_PAPI"
-TAGLINE = "public IP, lookup & subnet toolkit"
+TAGLINE = "Public IP, lookup and subnet toolkit for network technicians."
+SUBTITLE = "NETWORK TOOLKIT"
 
-# Palette, kept in one place so the header, menu, results and messages match.
-ACCENT = "#3cc8b4"   # teal signal colour
-INFO = "#e0a43a"     # amber: informational / not-available values
-ERROR = "#ef5f56"    # red: errors only
-MUTED = "grey62"     # labels and secondary text
-RULE = "grey35"      # thin divider lines
+# Palette (from the team's reference board: 111111 333333 777777 BEB8AD
+# E6E1D7 F6F4EE). Only the taupe is hard-coded; ink uses the terminal's own
+# foreground so nothing disappears on a dark background.
+TAUPE = "#beb8ad"   # rules, gauge tracks
+LABEL = "dim"       # field labels and secondary text
 INDENT = "  "
 
 _STYLE_BY_LEVEL = {
-    "info": MUTED,
-    "success": f"bold {ACCENT}",
-    "warning": f"bold {INFO}",
-    "error": f"bold {ERROR}",
+    "info": "dim",
+    "success": "bold",
+    "warning": "bold",
+    "error": "bold",
 }
 
 
 def _console():
     """A rich Console with automatic number/URL highlighting turned off, so
-    the palette above is the only colour on screen."""
+    the monochrome palette is the only styling on screen."""
     from rich.console import Console
 
     return Console(highlight=False)
+
+
+def spaced(text):
+    """'SUBNET' -> 'S U B N E T' (letter-spaced small-caps label)."""
+    return " ".join(str(text).upper())
 
 
 def _is_informational(key, value):
@@ -51,7 +59,7 @@ def _is_informational(key, value):
 
     Covers values like "N/A" or "not available ..." and any field literally
     called "Note" (e.g. lookup.py's "Private address - no public provider
-    details"). These are highlighted subtly instead of looking like an error.
+    details"). These are shown dim and italic instead of looking like data.
     """
     if str(key).strip().lower() == "note":
         return True
@@ -81,11 +89,11 @@ def _plain_table(title, data):
 def show_table(title, data):
     """Print `data` (a dict of Field -> Value, in display order) as a result.
 
-    With rich: a heading line (section label in teal, subject in bold), a
-    thin rule, then a borderless key/value list. Keys are muted so the
-    values stand out; informational values (see `_is_informational`) are
-    amber italic so they read as a note, not an error. Falls back to plain
-    aligned text if rich is unavailable or rendering fails. Never raises.
+    With rich: a letter-spaced section label with the subject beside it, a
+    short taupe rule, then a borderless key/value list with dim labels and
+    bold values. Informational values (see `_is_informational`) are dim
+    italic. Falls back to plain aligned text if rich is unavailable or
+    rendering fails. Never raises.
     """
     try:
         from rich.padding import Padding
@@ -95,25 +103,25 @@ def show_table(title, data):
         console = _console()
         label, subject = _split_title(title)
         heading = Text(INDENT)
-        heading.append(label, style=f"bold {ACCENT}")
+        heading.append(spaced(label), style="bold")
         if subject:
-            heading.append("   " + subject, style="bold")
+            heading.append("     " + subject)
 
-        grid = Table.grid(padding=(0, 3))
-        grid.add_column(style=MUTED, no_wrap=True)
+        grid = Table.grid(padding=(0, 4))
+        grid.add_column(style=LABEL, no_wrap=True)
         grid.add_column()
         if not data:
             grid.add_row("(no data)", "")
         else:
             for key, value in data.items():
                 if _is_informational(key, value):
-                    grid.add_row(str(key), Text(str(value), style=f"italic {INFO}"))
+                    grid.add_row(str(key), Text(str(value), style="dim italic"))
                 else:
                     grid.add_row(str(key), Text(str(value), style="bold"))
 
         console.print()
         console.print(heading)
-        console.print(INDENT + "─" * max(len(heading.plain) - len(INDENT), 24), style=RULE)
+        console.print(INDENT + "──", style=TAUPE)
         console.print(Padding(grid, (0, 0, 0, len(INDENT))))
     except Exception:
         # rich isn't installed, or the terminal/data upset it somehow -
@@ -121,51 +129,96 @@ def show_table(title, data):
         _plain_table(title, data)
 
 
-def show_message(text, level="info"):
-    """Print a short status line, coloured by `level` when rich is available.
+def show_gauge(label, filled, total, caption="", width=32):
+    """Print a horizontal gauge, e.g. network bits vs host bits of a subnet.
 
-    `level` is one of "info" (default), "success", "warning" or "error".
+    `filled` of `total` cells are drawn solid in ink, the rest as a taupe
+    track. The bar is scaled to `width` cells (IPv6 /64 still fits). Prints
+    nothing useful but never raises if rich is unavailable.
+    """
+    try:
+        from rich.text import Text
+
+        total = max(int(total), 1)
+        filled = min(max(int(filled), 0), total)
+        cells = round(width * filled / total)
+        bar = Text(INDENT)
+        bar.append(spaced(label), style="dim")
+        bar.append("\n" + INDENT)
+        bar.append("█" * cells)
+        bar.append("█" * (width - cells), style=TAUPE)
+        if caption:
+            bar.append("   " + caption, style="dim")
+        console = _console()
+        console.print()
+        console.print(bar)
+    except Exception:
+        print(f"{INDENT}{label}: {filled}/{total} {caption}")
+
+
+def show_message(text, level="info"):
+    """Print a short status line.
+
+    `level` is one of "info" (default, dim), "success" (bold), "warning"
+    (bold) or "error" (an inverted ERROR badge followed by the text).
     Never raises.
     """
     try:
+        from rich.text import Text
+
+        line = Text(INDENT)
+        if level == "error":
+            line.append(" ERROR ", style="reverse bold")
+            line.append("  " + str(text), style="bold")
+        elif level == "warning":
+            line.append(" NOTE ", style="reverse")
+            line.append("  " + str(text))
+        else:
+            line.append(str(text), style=_STYLE_BY_LEVEL.get(level, "dim"))
         console = _console()
         console.print()
-        console.print(INDENT + str(text), style=_STYLE_BY_LEVEL.get(level, MUTED), markup=False)
+        console.print(line)
     except Exception:
         print(text)
 
 
 def show_header():
-    """Print the app name, tagline and a thin rule. Never raises."""
+    """Print the app name, a letter-spaced subtitle, the tagline and a short
+    rule - the "title block" of the reference board. Never raises."""
     try:
         from rich.text import Text
 
         console = _console()
-        line = Text(INDENT)
-        line.append(APP_NAME, style=f"bold {ACCENT}")
-        line.append("  ·  " + TAGLINE, style=MUTED)
+        block = Text(INDENT)
+        block.append(" ".join(APP_NAME), style="bold")
+        block.append("\n" + INDENT)
+        block.append(spaced(SUBTITLE).replace("   ", "     "), style="dim")
+        block.append("\n\n" + INDENT)
+        block.append(TAGLINE)
         console.print()
-        console.print(line)
-        console.print(INDENT + "─" * (len(line.plain) - len(INDENT)), style=RULE)
+        console.print(block)
+        console.print(INDENT + "──", style=TAUPE)
     except Exception:
         print(f"=== {APP_NAME} - {TAGLINE} ===")
 
 
 def show_menu(items):
     """Print the numbered menu. `items` is a list of (key, label) pairs;
-    key "0" (Exit) is shown muted. Never raises."""
+    key "0" (Exit) is shown dim. Never raises."""
     try:
         from rich.padding import Padding
         from rich.table import Table
+        from rich.text import Text
 
-        grid = Table.grid(padding=(0, 2))
-        grid.add_column(justify="right", style=f"bold {ACCENT}", no_wrap=True)
+        grid = Table.grid(padding=(0, 3))
+        grid.add_column(justify="right", style="bold", no_wrap=True)
         grid.add_column()
         for key, label in items:
-            grid.add_row(key, label, style=MUTED if key == "0" else None)
+            grid.add_row(key, label, style="dim" if key == "0" else None)
         console = _console()
         console.print()
-        console.print(Padding(grid, (0, 0, 0, len(INDENT) + 1)))
+        console.print(Text(INDENT + spaced("menu"), style="dim"))
+        console.print(Padding(grid, (0, 0, 0, len(INDENT))))
     except Exception:
         print()
         for key, label in items:
@@ -173,7 +226,7 @@ def show_menu(items):
 
 
 def ask(prompt):
-    """Show a prompt ("› Choose an option") and return what the user types.
+    """Show a prompt ("→ Choose an option") and return what the user types.
 
     The prompt is printed with rich, then plain input() reads the answer, so
     Ctrl+C / EOF still raise KeyboardInterrupt / EOFError for main.py.
@@ -182,8 +235,8 @@ def ask(prompt):
         from rich.text import Text
 
         line = Text("\n" + INDENT)
-        line.append("› ", style=f"bold {ACCENT}")
-        line.append(prompt + " ", style="bold")
+        line.append("→  ", style=TAUPE)
+        line.append(prompt + " ", style="dim")
         _console().print(line, end="")
         return input()
     except (KeyboardInterrupt, EOFError):

@@ -61,6 +61,16 @@ def option_subnet():
     cidr = ui.ask("Enter a network in CIDR notation (e.g. 192.168.10.0/26):").strip()
     result = subnet_tools.subnet_info(cidr)
     ui.show_table(f"Subnet: {cidr}", result)
+
+    # Visual of the mask: how many bits are network vs host.
+    prefix = int(result["Prefix length"])
+    max_bits = 32 if result["Version"] == "IPv4" else 128
+    ui.show_gauge(
+        "network bits",
+        prefix,
+        max_bits,
+        f"{prefix} network  ·  {max_bits - prefix} host",
+    )
     return result
 
 
