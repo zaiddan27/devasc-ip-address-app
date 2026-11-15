@@ -6,7 +6,9 @@ APIs (free, no key):
     https://api.ipify.org?format=json    -> {"ip": "<IPv4>"}
     https://api6.ipify.org?format=json   -> {"ip": "<IPv6>"}  (fails if the network has no IPv6)
     https://ipapi.co/json/               -> details for this computer's IP
+    https://ipapi.co/<ip>/json/          -> details for a specific IP
     http://ip-api.com/json/              -> fallback if ipapi.co fails or is rate-limited
+    http://ip-api.com/json/<ip>          -> fallback for a specific IP
 
 Design notes for future maintainers:
     - Every network call goes through a tiny `_get_json()` helper so the
@@ -14,6 +16,11 @@ Design notes for future maintainers:
     - `get_public_ipv4`/`get_public_ipv6` never raise: any problem (network
       error, bad JSON, garbage value) results in `None`, per the contract in
       docs/INTERFACES.md.
+    - `get_ip_details` tries ipapi.co first, then falls back to ip-api.com.
+      Both providers report errors differently (see `_ipapi_co_details` and
+      `_ip_api_com_details` below), so each has its own small parser that
+      returns `None` on failure and a fully-populated dict on success. Only
+      if *both* fail does `get_ip_details` raise `ConnectionError`.
 """
 
 import ipaddress
@@ -27,6 +34,19 @@ TIMEOUT = 5  # seconds for every HTTP request
 USER_AGENT = "devasc-ip-address-app/1.0"
 
 _HEADERS = {"User-Agent": USER_AGENT}
+
+# The exact, ordered keys that get_ip_details() must always return.
+_DETAIL_KEYS = (
+    "IP",
+    "ISP",
+    "ASN",
+    "Country",
+    "Country code",
+    "Region",
+    "City",
+    "Timezone",
+    "Source",
+)
 
 
 def _get_json(url):
@@ -85,11 +105,97 @@ def get_public_ipv6():
     return ip
 
 
-def get_ip_details(ip=None):
-    """Return a dict of details for `ip` (or this computer's IP when None).
+def _clean(value):
+    """Return `value` as-is, or 'N/A' if it is missing/empty."""
+    if value is None or value == "":
+        return "N/A"
+    return value
 
-    Keys: ISP, ASN, Country, Country code, Region, City, Timezone.
-    Try ipapi.co first; if it fails or returns an error, use ip-api.com.
+
+def _ipapi_co_details(ip):
+    """Fetch and map details from ipapi.co. Return None if it failed.
+
+    ipapi.co signals an error inside the JSON body itself (HTTP 200 with
+    {"error": true, "reason": "..."}) and can also return HTTP 429 when
+    rate-limited; `_get_json` already turns a 429 into None via
+    raise_for_status(), and here we additionally check the in-body error
+    flag.
     """
-    # TODO: call ipapi.co, fall back to ip-api.com, map both to the same keys
-    raise NotImplementedError("ip_info.get_ip_details")
+    url = "https://ipapi.co/json/" if ip is None else f"https://ipapi.co/{ip}/json/"
+    data = _get_json(url)
+    if not isinstance(data, dict):
+        return None
+    if data.get("error"):
+        # e.g. {"error": true, "reason": "RateLimited"} or "Reserved IP Address"
+        return None
+
+    asn = data.get("asn")  # already just the number/ID for ipapi.co, e.g. "AS15169"
+
+    return {
+        "IP": _clean(data.get("ip")),
+        "ISP": _clean(data.get("org")),
+        "ASN": _clean(asn),
+        "Country": _clean(data.get("country_name")),
+        "Country code": _clean(data.get("country_code")),
+        "Region": _clean(data.get("region")),
+        "City": _clean(data.get("city")),
+        "Timezone": _clean(data.get("timezone")),
+        "Source": "ipapi.co",
+    }
+
+
+def _ip_api_com_details(ip):
+    """Fetch and map details from ip-api.com. Return None if it failed.
+
+    ip-api.com signals an error with {"status": "fail", "message": "..."}
+    instead of an HTTP error code.
+    """
+    url = "http://ip-api.com/json/" if ip is None else f"http://ip-api.com/json/{ip}"
+    data = _get_json(url)
+    if not isinstance(data, dict):
+        return None
+    if data.get("status") == "fail":
+        # e.g. {"status": "fail", "message": "invalid query"}
+        return None
+
+    # ip-api.com's "as" field looks like "AS15169 Google LLC"; we only want
+    # the leading AS number for the ASN column.
+    as_field = data.get("as") or ""
+    asn = as_field.split(" ")[0] if as_field else ""
+
+    return {
+        "IP": _clean(data.get("query")),
+        "ISP": _clean(data.get("isp")),
+        "ASN": _clean(asn),
+        "Country": _clean(data.get("country")),
+        "Country code": _clean(data.get("countryCode")),
+        "Region": _clean(data.get("regionName")),
+        "City": _clean(data.get("city")),
+        "Timezone": _clean(data.get("timezone")),
+        "Source": "ip-api.com",
+    }
+
+
+def get_ip_details(ip=None):
+    """Return a dict of provider details for `ip`, or this computer's IP when None.
+
+    Keys, in order: IP, ISP, ASN, Country, Country code, Region, City,
+    Timezone, Source. Missing individual fields are "N/A".
+
+    Tries ipapi.co first; if it fails, errors, or is rate-limited, falls
+    back to ip-api.com. If both fail, raises ConnectionError with a
+    friendly message (per docs/INTERFACES.md).
+    """
+    details = _ipapi_co_details(ip)
+    if details is None:
+        details = _ip_api_com_details(ip)
+    if details is None:
+        raise ConnectionError(
+            "Could not get IP details: both ipapi.co and ip-api.com are "
+            "unreachable or returned an error. Check your internet "
+            "connection and try again in a moment."
+        )
+
+    # Defensive: guarantee the exact key order/shape the contract promises,
+    # even if a provider mapping above is ever changed carelessly.
+    return {key: details.get(key, "N/A") for key in _DETAIL_KEYS}
