@@ -1,4 +1,4 @@
-# DevASC IP Address App
+# IP_PAPI
 
 A menu-driven Python command-line tool that shows a computer's current **public IPv4 and IPv6 addresses**, with details about them, and gives network technicians quick IP tools in one place.
 
