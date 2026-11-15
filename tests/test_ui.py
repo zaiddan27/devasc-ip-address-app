@@ -128,5 +128,5 @@ def test_show_message_and_show_header_do_not_raise_without_rich(monkeypatch, cap
     ui.show_message("hello", "success")
 
     captured = capsys.readouterr()
-    assert "DevASC" in captured.out
+    assert "IP_PAPI" in captured.out
     assert "hello" in captured.out

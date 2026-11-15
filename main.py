@@ -1,4 +1,4 @@
-"""DevASC IP Address App - main menu.
+"""IP_PAPI - main menu.
 
 Run with:  python main.py
 
@@ -42,7 +42,7 @@ def option_my_ip():
 
 def option_lookup():
     """2. Look up any IP address or domain name."""
-    target = input("Enter an IP address or domain: ").strip()
+    target = ui.ask("Enter an IP address or domain:").strip()
     result = lookup.lookup(target)
     ui.show_table(f"Lookup: {target}", result)
     return result
@@ -50,7 +50,7 @@ def option_lookup():
 
 def option_classify():
     """3. Classify an IP address (public, private, loopback, version)."""
-    address = input("Enter an IP address: ").strip()
+    address = ui.ask("Enter an IP address:").strip()
     result = subnet_tools.classify_address(address)
     ui.show_table(f"Address: {address}", result)
     return result
@@ -58,7 +58,7 @@ def option_classify():
 
 def option_subnet():
     """4. Calculate subnet details from CIDR notation, e.g. 192.168.10.0/26."""
-    cidr = input("Enter a network in CIDR notation (e.g. 192.168.10.0/26): ").strip()
+    cidr = ui.ask("Enter a network in CIDR notation (e.g. 192.168.10.0/26):").strip()
     result = subnet_tools.subnet_info(cidr)
     ui.show_table(f"Subnet: {cidr}", result)
     return result
@@ -70,7 +70,7 @@ def option_export():
         ui.show_message("Nothing to export yet. Run one of options 1-4 first.", "warning")
         return None
 
-    fmt = input("Format (json/csv): ").strip().lower()
+    fmt = ui.ask("Format (json/csv):").strip().lower()
     if fmt == "csv":
         path = ui.export_csv(last_result)
     else:
@@ -93,10 +93,7 @@ MENU = {
 
 def show_menu():
     """Print the numbered list of options below the header."""
-    print()
-    for key, (label, _) in MENU.items():
-        print(f"  {key}. {label}")
-    print("  0. Exit")
+    ui.show_menu([(key, label) for key, (label, _) in MENU.items()] + [("0", "Exit")])
 
 
 def main():
@@ -106,14 +103,14 @@ def main():
     while True:
         show_menu()
         try:
-            choice = input("Choose an option: ").strip()
+            choice = ui.ask("Choose an option:").strip()
         except (KeyboardInterrupt, EOFError):
             # Ctrl+C, or piped input ran out - exit cleanly, no traceback.
-            print("\nGoodbye!")
+            ui.show_message("Goodbye.")
             break
 
         if choice == "0":
-            print("Goodbye!")
+            ui.show_message("Goodbye.")
             break
         if choice not in MENU:
             ui.show_message("Invalid choice, try again.", "warning")
@@ -125,7 +122,7 @@ def main():
                 last_result = result
         except (KeyboardInterrupt, EOFError):
             # Can also happen inside an option, e.g. while typing an address.
-            print("\nGoodbye!")
+            ui.show_message("Goodbye.")
             break
         except NotImplementedError as exc:
             # Expected while a teammate's module is still a stub.
