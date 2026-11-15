@@ -1,0 +1,899 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>IP_PAPI Presentation</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,300..800&family=Public+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Magazine sheets on a grey stage: one large plate (a real screenshot) bleeds off one side,
+   a white panel carries the Part numeral, a tracked title and a narrow column of small type. */
+:root {
+  --stage: #d6d4cf;
+  --sheet: #fbfaf7;
+  --ink: #151513;
+  --ink-2: #3b3a37;
+  --muted: #6b6963;
+  --hair: #dcd8cf;
+  --ochre: #a87c17;
+  --olive: #5f6650;
+  --code-bg: #f1eee7;
+  --display: "Archivo", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+  --body: "Public Sans", "Segoe UI", Roboto, Arial, sans-serif;
+  --mono: "JetBrains Mono", Consolas, "Courier New", monospace;
+  color-scheme: light;
+}
+html, body { height: 100%; }
+body {
+  background: var(--stage);
+  color: var(--ink);
+  font-family: var(--body);
+  -webkit-font-smoothing: antialiased;
+}
+a { color: inherit; }
+[hidden] { display: none !important; }
+::selection { background: var(--ink); color: var(--sheet); }
+:focus-visible { outline: 2px solid var(--ochre); outline-offset: 3px; }
+
+/* ---------- stage ---------- */
+.stage {
+  min-height: 100%;
+  display: grid;
+  grid-template-rows: 1fr auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 18px 10px;
+  gap: 12px;
+}
+.deck { display: grid; place-items: center; min-height: 0; }
+.slide {
+  --w: min(100%, calc((100dvh - 118px) * 16 / 9));
+  width: var(--w);
+  aspect-ratio: 16 / 9;
+  max-width: 100%;
+  background: var(--sheet);
+  box-shadow: 0 18px 40px -18px rgba(30, 28, 22, .45), 0 2px 6px rgba(30, 28, 22, .12);
+  container-type: inline-size;
+  position: relative;
+  overflow: hidden;
+  display: none;
+}
+.slide.is-current { display: grid; }
+
+/* ---------- slide grammar ---------- */
+.split { grid-template-columns: 58% 1fr; }
+.split.flip { grid-template-columns: 1fr 58%; }
+.split.flip .plate { order: 2; }
+.split.narrow { grid-template-columns: 42% 1fr; }
+.split.narrow.flip { grid-template-columns: 1fr 42%; }
+
+.plate {
+  position: relative;
+  margin: 0;
+  background: var(--olive);
+  overflow: hidden;
+  cursor: zoom-in;
+  border: 0;
+  padding: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.plate img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform .9s cubic-bezier(.16, 1, .3, 1);
+}
+.plate:hover img { transform: scale(1.025); }
+.plate .zoom {
+  position: absolute;
+  left: 2.2cqw; bottom: 2cqw;
+  font: 600 .9cqw/1 var(--body);
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: #fff;
+  background: rgba(21, 21, 19, .62);
+  padding: .55cqw .8cqw;
+}
+
+.panel {
+  position: relative;
+  padding: 4.2cqw 5.4cqw 3.4cqw 4.4cqw;
+  display: flex;
+  flex-direction: column;
+  gap: 1.3cqw;
+  min-width: 0;
+}
+.vert {
+  position: absolute;
+  right: 1.5cqw; top: 4cqw;
+  writing-mode: vertical-rl;
+  font: 700 .95cqw/1 var(--display);
+  font-stretch: 75%;
+  letter-spacing: .32em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+.flip .vert, .left-vert .vert { right: auto; left: 1.4cqw; }
+
+.part {
+  display: flex; align-items: baseline; gap: .5cqw;
+  font-family: var(--display);
+  line-height: .8;
+}
+.part small {
+  font-size: 1.25cqw; font-weight: 600; font-stretch: 100%;
+  letter-spacing: .02em;
+}
+.part b {
+  font-size: 6.4cqw; font-weight: 800; font-stretch: 88%;
+  letter-spacing: -.03em;
+}
+.title {
+  font: 700 1.9cqw/1.15 var(--display);
+  font-stretch: 92%;
+  letter-spacing: -.005em;
+  text-wrap: balance;
+  margin: 0;
+}
+.speaker {
+  font: 600 .88cqw/1 var(--body);
+  letter-spacing: .24em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.copy {
+  font-size: 1.04cqw; line-height: 1.6;
+  color: var(--ink-2);
+  max-width: 30cqw;
+  margin: 0;
+}
+.copy b { color: var(--ink); font-weight: 600; }
+
+.figure {
+  display: flex; align-items: baseline; gap: .6cqw;
+  font-family: var(--display);
+  margin-top: auto;
+}
+.figure strong {
+  font-size: 7.2cqw; font-weight: 800; font-stretch: 80%;
+  line-height: .8; letter-spacing: -.04em;
+}
+.figure strong i { font-style: normal; color: var(--ochre); }
+.figure span {
+  font: 500 .95cqw/1.35 var(--body);
+  color: var(--muted);
+  max-width: 13cqw;
+}
+
+/* links: GitHub sources */
+.links { display: flex; flex-wrap: wrap; gap: .5cqw .6cqw; }
+.links a {
+  font: 600 .86cqw/1 var(--body);
+  letter-spacing: .04em;
+  text-decoration: none;
+  border: 1px solid var(--ink);
+  padding: .55cqw .75cqw;
+  display: inline-flex; gap: .45cqw; align-items: center;
+  transition: background .2s, color .2s;
+}
+.links a::after { content: "↗"; font-weight: 400; }
+.links a:hover { background: var(--ink); color: var(--sheet); }
+
+/* lists and tables */
+.rows { list-style: none; margin: 0; padding: 0; display: grid; gap: .1cqw; }
+.rows li {
+  display: grid; grid-template-columns: 3.4cqw 1fr auto; gap: .9cqw;
+  align-items: baseline;
+  border-top: 1px solid var(--hair);
+  padding: .62cqw 0;
+  font-size: .98cqw; line-height: 1.35;
+  color: var(--ink-2);
+}
+.rows li:last-child { border-bottom: 1px solid var(--hair); }
+.rows .n { font: 700 1.05cqw/1 var(--display); color: var(--ink); font-variant-numeric: tabular-nums; }
+.rows a { text-decoration: none; border-bottom: 1px solid var(--hair); }
+.rows a:hover { border-color: var(--ink); }
+.rows .meta { font-size: .82cqw; color: var(--muted); white-space: nowrap; }
+.rows.two li { grid-template-columns: 9cqw 1fr; }
+
+/* code */
+.code {
+  background: var(--code-bg);
+  border-top: 2px solid var(--ink);
+  margin: 0;
+  overflow: auto;
+  max-height: 100%;
+  min-height: 0;
+}
+.code-head {
+  display: flex; justify-content: space-between; align-items: center;
+  font: 600 .8cqw/1 var(--body);
+  letter-spacing: .14em; text-transform: uppercase;
+  padding: .8cqw 1.1cqw .2cqw;
+  color: var(--muted);
+}
+.code-head a { color: var(--ink); text-decoration: none; border-bottom: 1px solid var(--ink); letter-spacing: .06em; }
+.code pre {
+  margin: 0; padding: .6cqw 1.1cqw 1.1cqw;
+  font: 400 .86cqw/1.55 var(--mono);
+  color: var(--ink);
+  white-space: pre;
+  tab-size: 4;
+}
+.token.comment { color: #8a8780; font-style: italic; }
+.token.string { color: #7a5a12; }
+.token.keyword, .token.boolean { font-weight: 600; color: var(--ink); }
+.token.function { color: #3f4733; }
+.token.number { color: #7a5a12; }
+.token.key, .token.atrule { color: #3f4733; font-weight: 600; }
+.token.punctuation, .token.operator { color: #5a5852; }
+
+/* type-in chips for the demo */
+.keys { display: flex; flex-wrap: wrap; gap: .45cqw; }
+.keys kbd {
+  font: 600 .9cqw/1 var(--mono);
+  border: 1px solid var(--ink-2);
+  border-bottom-width: 2px;
+  padding: .45cqw .65cqw;
+  background: var(--sheet);
+}
+.keys .then { font: 500 .85cqw/1.9 var(--body); color: var(--muted); }
+
+/* ---------- cover ---------- */
+.cover { grid-template-columns: 66% 1fr; }
+.cover .plate::after {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(180deg, rgba(21,21,19,.45), rgba(21,21,19,.72));
+  pointer-events: none;
+}
+.cover .mark {
+  position: absolute; left: 0; width: 66%; top: 46%;
+  text-align: center;
+  font: 300 3.4cqw/1 var(--display);
+  font-stretch: 125%;
+  letter-spacing: .9em; text-indent: .9em;
+  color: #fff;
+  pointer-events: none;
+  z-index: 2;
+}
+.cover .byline {
+  position: absolute; right: calc(34% + 3cqw); bottom: 3cqw;
+  font: 700 2.1cqw/1.05 var(--display);
+  font-stretch: 70%;
+  text-transform: uppercase;
+  color: #fff; text-align: right;
+  pointer-events: none; z-index: 2;
+}
+.cover .index { padding: 4.2cqw 3.6cqw 3cqw 3.2cqw; gap: .2cqw; }
+.cover .index ol { list-style: none; margin: 1cqw 0 0; padding: 0; display: grid; gap: .55cqw; }
+.cover .index li a {
+  display: grid; grid-template-columns: 4.8cqw 1fr; gap: .4cqw;
+  text-decoration: none; align-items: baseline;
+}
+.cover .index li b { font: 800 1.35cqw/1 var(--display); font-stretch: 85%; }
+.cover .index li span { font-size: .95cqw; line-height: 1.3; color: var(--ink-2); }
+.cover .index li em { display: block; font-style: normal; font-size: .76cqw; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin-top: .15cqw; }
+.cover .index li a:hover b { color: var(--ochre); }
+
+/* closing / full sheet */
+.sheet-full { grid-template-columns: 1fr; }
+.sheet-full .panel { padding: 4.4cqw 6cqw 3.6cqw; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 3cqw; min-height: 0; }
+.grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2.4cqw; }
+.mini-plates { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1cqw; }
+.mini-plates .plate { aspect-ratio: 16 / 10; height: auto; }
+.stack { display: grid; grid-template-rows: 1fr 1fr; gap: .7cqw; min-height: 0; }
+.stack .plate { height: 100%; }
+
+/* ---------- controls ---------- */
+.bar {
+  display: flex; align-items: center; justify-content: center; gap: 18px;
+  font-family: var(--body);
+  color: var(--ink-2);
+}
+.bar button {
+  appearance: none; background: none; border: 1px solid var(--ink-2);
+  color: var(--ink); font: 600 12px/1 var(--body); letter-spacing: .14em;
+  text-transform: uppercase; padding: 9px 14px; cursor: pointer;
+}
+.bar button:hover { background: var(--ink); color: var(--stage); }
+.bar button:disabled { opacity: .35; cursor: default; background: none; color: var(--ink); }
+.gauge { display: flex; gap: 3px; }
+.gauge i { width: 14px; height: 6px; background: #b7b3aa; display: block; }
+.gauge i.on { background: var(--ink); }
+.count { font: 700 13px/1 var(--display); font-variant-numeric: tabular-nums; letter-spacing: .08em; min-width: 54px; text-align: center; }
+.hint { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+
+/* lightbox */
+.lightbox {
+  position: fixed; inset: 0; z-index: 50;
+  background: rgba(21, 21, 19, .9);
+  display: grid; grid-template-rows: 1fr auto; gap: 12px;
+  padding: max(20px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) max(16px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
+}
+.lightbox img { max-width: 100%; max-height: 100%; object-fit: contain; margin: auto; display: block; min-height: 0; }
+.lightbox p { margin: 0; color: #f1eee7; font-size: 14px; text-align: center; }
+.lightbox button { position: absolute; top: max(14px, env(safe-area-inset-top, 0px)); right: max(16px, env(safe-area-inset-right, 0px)); background: #f1eee7; color: var(--ink); border: 0; font: 600 12px/1 var(--body); letter-spacing: .14em; text-transform: uppercase; padding: 9px 12px; cursor: pointer; }
+
+@media (prefers-reduced-motion: reduce) {
+  .plate img { transition: none; }
+}
+
+/* ---------- narrow screens: read as a scroll of sheets ---------- */
+@media (max-width: 820px) {
+  .stage { grid-template-rows: auto; padding-block: 12px 24px; }
+  .bar { display: none; }
+  .deck { display: grid; gap: 18px; }
+  .slide, .slide.is-current {
+    display: grid; width: 100%; aspect-ratio: auto;
+    container-type: normal;
+  }
+  .split, .split.flip, .split.narrow, .split.narrow.flip, .cover, .sheet-full { grid-template-columns: 1fr; }
+  .split.flip .plate { order: 0; }
+  .plate { height: auto; aspect-ratio: 16 / 10; }
+  .panel, .cover .index, .sheet-full .panel { padding: 22px 20px 24px; gap: 12px; }
+  .vert { display: none; }
+  .part small { font-size: 13px; } .part b { font-size: 52px; }
+  .title { font-size: 22px; }
+  .speaker { font-size: 11px; }
+  .copy { font-size: 15px; max-width: none; }
+  .figure strong { font-size: 56px; } .figure span { font-size: 13px; max-width: 220px; }
+  .links a { font-size: 12px; padding: 8px 10px; gap: 6px; }
+  .rows li { font-size: 14px; grid-template-columns: 34px 1fr; padding: 8px 0; }
+  .rows .meta { grid-column: 2; font-size: 12px; white-space: normal; }
+  .rows .n { font-size: 14px; }
+  .rows.two li { grid-template-columns: 1fr; }
+  .code-head { font-size: 11px; padding: 10px 12px 4px; }
+  .code pre { font-size: 12px; padding: 6px 12px 12px; }
+  .keys kbd { font-size: 13px; padding: 6px 8px; } .keys .then { font-size: 12px; }
+  .cover .mark { font-size: 22px; letter-spacing: .5em; text-indent: .5em; width: 100%; top: 18%; }
+  .cover .byline { font-size: 18px; right: 14px; bottom: auto; top: calc(min(100vw, 820px) * .62 - 70px); }
+  .cover .index li a { grid-template-columns: 64px 1fr; }
+  .cover .index li b { font-size: 16px; } .cover .index li span { font-size: 14px; } .cover .index li em { font-size: 10px; }
+  .plate .zoom { font-size: 10px; padding: 5px 7px; left: 10px; bottom: 10px; }
+  .grid2, .grid3, .mini-plates { grid-template-columns: 1fr; gap: 14px; }
+  .stack { grid-template-rows: auto; }
+}
+</style>
+</head>
+<body>
+
+<div class="stage">
+<main class="deck" id="deck">
+
+<!-- COVER -->
+<section class="slide cover" id="cover" data-title="IP_PAPI">
+  <button class="plate" data-src="img/13-all-four-prs-merged.jpg" data-cap="Our merged pull requests on GitHub" aria-label="Open screenshot: merged pull requests">
+    <img src="img/13-all-four-prs-merged.jpg" alt="Merged pull requests on GitHub" style="object-position: 62% 30%">
+  </button>
+  <div class="mark">I P _ P A P I</div>
+  <div class="byline">Never<br>Grow<br>Old</div>
+  <div class="panel index">
+    <span class="speaker">DEVASC · Project Activity 3 · Social Coding</span>
+    <ol>
+      <li><a href="#team"><b>Part.01</b><span>Opening and team<em>Jerome</em></span></a></li>
+      <li><a href="#choice"><b>Part.02</b><span>Why the IP app<em>Francis</em></span></a></li>
+      <li><a href="#features"><b>Part.03</b><span>Five features<em>Elijah</em></span></a></li>
+      <li><a href="#roles"><b>Part.04</b><span>Roles and strategy<em>Elijah</em></span></a></li>
+      <li><a href="#pulls"><b>Part.05</b><span>Working on GitHub<em>Jerome</em></span></a></li>
+      <li><a href="#demo-ip"><b>Part.06</b><span>Live demo<em>All four</em></span></a></li>
+      <li><a href="#code"><b>Part.07</b><span>Code and docs<em>John Patrick</em></span></a></li>
+      <li><a href="#backlog"><b>Part.08</b><span>Backlog<em>Francis</em></span></a></li>
+      <li><a href="#reflection"><b>Part.09</b><span>Reflection<em>All four</em></span></a></li>
+      <li><a href="#closing"><b>Part.10</b><span>Closing<em>John Patrick</em></span></a></li>
+    </ol>
+    <div class="links" style="margin-top:auto">
+      <a href="https://github.com/zaiddan27/devasc-ip-address-app" target="_blank" rel="noopener">Repository</a>
+      <a href="https://github.com/users/zaiddan27/projects/1" target="_blank" rel="noopener">Project board</a>
+    </div>
+  </div>
+</section>
+
+<!-- PART 01 -->
+<section class="slide split narrow" id="team" data-title="Opening and team">
+  <button class="plate" data-src="img/17-insights-contributors-all-members.jpg" data-cap="Contributors: ZaiddanSui, frncs-trrs, pathricky and zaiddan27 (Claude appears as co-author on commits it assisted)" aria-label="Open screenshot: contributors">
+    <img src="img/17-insights-contributors-all-members.jpg" alt="Contributor cards for each team member" style="object-position: 45% 50%">
+    <span class="zoom">View full</span>
+  </button>
+  <div class="panel">
+    <span class="vert">Opening · 0:00–0:45</span>
+    <div class="part"><small>Part.</small><b>01</b></div>
+    <span class="speaker">Jerome · all say hi</span>
+    <h2 class="title">Team NEVER GROW OLD built IP_PAPI.</h2>
+    <ul class="rows two">
+      <li><a href="https://github.com/zaiddan27" target="_blank" rel="noopener"><b>Jerome Ancheta</b></a><span>Scrum leader · IP detection, CI</span></li>
+      <li><a href="https://github.com/ZaiddanSui" target="_blank" rel="noopener"><b>Elijah Dela Vega</b></a><span>Recorder · menu, output, export</span></li>
+      <li><a href="https://github.com/frncs-trrs" target="_blank" rel="noopener"><b>Francis Torres</b></a><span>Network tools · subnetting</span></li>
+      <li><a href="https://github.com/pathricky" target="_blank" rel="noopener"><b>John Patrick Naborte</b></a><span>Lookup · testing · README</span></li>
+    </ul>
+    <div class="figure"><strong>4</strong><span>members, each with their own module and GitHub account</span></div>
+  </div>
+</section>
+
+<!-- PART 02 -->
+<section class="slide split flip" id="choice" data-title="Why the IP app">
+  <button class="plate" data-src="img/18-system-my-public-ip.png" data-cap="IP_PAPI option 1: our public IP and provider" aria-label="Open screenshot: My public IP">
+    <img src="img/18-system-my-public-ip.png" alt="IP_PAPI showing public IP details" style="object-position: 30% 55%">
+    <span class="zoom">View full</span>
+  </button>
+  <div class="panel">
+    <span class="vert">Project choice · 0:45–2:00</span>
+    <div class="part"><small>Part.</small><b>02</b></div>
+    <span class="speaker">Francis</span>
+    <h2 class="title">We chose Option 2: a new IPv4/IPv6 address app.</h2>
+    <p class="copy"><b>It fits network technicians</b>, the people the request came from. <b>The APIs need no key</b>, so everyone could run it on day one and nothing secret could leak into a public repo. <b>Building from scratch</b> let us split the work into one module per person. And it left <b>room to add real tools</b>.</p>
+    <div class="figure"><strong>0</strong><span>API keys needed: ipify, ipapi.co and ip-api.com are free</span></div>
+  </div>
+</section>
+
+<!-- PART 03 -->
+<section class="slide split" id="features" data-title="Five features">
+  <button class="plate" data-src="img/22-system-subnet-calculator.png" data-cap="IP_PAPI option 4: subnet calculator with the network-bits gauge" aria-label="Open screenshot: subnet calculator">
+    <img src="img/22-system-subnet-calculator.png" alt="IP_PAPI subnet calculator output" style="object-position: 20% 50%">
+    <span class="zoom">View full</span>
+  </button>
+  <div class="panel">
+    <span class="vert">Features · 2:00–3:15</span>
+    <div class="part"><small>Part.</small><b>03</b></div>
+    <span class="speaker">Elijah</span>
+    <h2 class="title">One tool, five jobs a technician does every day.</h2>
+    <ul class="rows">
+      <li><span class="n">1</span><span>Public IPv4 and IPv6, with a clear message when there is no IPv6</span></li>
+      <li><span class="n">2</span><span>ISP, ASN and location, with a backup API</span></li>
+      <li><span class="n">3</span><span>Look up any IP, domain or pasted URL</span></li>
+      <li><span class="n">4</span><span>Offline classify and subnet, with a bits gauge</span></li>
+      <li><span class="n">5</span><span>Clean output, ERROR label, JSON and CSV export</span></li>
+    </ul>
+    <div class="figure"><strong>5</strong><span>menu options, numbered exactly as in the demo</span></div>
+  </div>
+</section>
+
+<!-- PART 04 -->
+<section class="slide split narrow flip" id="roles" data-title="Roles and strategy">
+  <button class="plate" data-src="img/12-all-four-prs-approved-before-merge.jpg" data-cap="All four feature pull requests, each opened by its owner and approved" aria-label="Open screenshot: approved pull requests">
+    <img src="img/12-all-four-prs-approved-before-merge.jpg" alt="Pull request list showing four approved pull requests" style="object-position: 50% 30%">
+    <span class="zoom">View full</span>
+  </button>
+  <div class="panel">
+    <span class="vert">Roles · 3:15–4:15</span>
+    <div class="part"><small>Part.</small><b>04</b></div>
+    <span class="speaker">Elijah</span>
+    <h2 class="title">Roles matched skills, and every task had one owner.</h2>
+    <p class="copy">We used our Project Activity 1 profiles: <b>Jerome</b> knows Python and APIs, <b>Francis</b> knows subnetting, <b>John Patrick</b> knows back-end and Git, and <b>Elijah</b> wanted to practise Python through the UI. We worked in <b>three sprints</b>: setup and core, features, then testing and this presentation.</p>
+    <div class="links">
+      <a href="https://github.com/users/zaiddan27/projects/1" target="_blank" rel="noopener">Project board</a>
+      <a href="https://github.com/zaiddan27/devasc-ip-address-app/issues?q=is%3Aissue" target="_blank" rel="noopener">All issues</a>
+    </div>
+    <div class="figure"><strong>14</strong><span>issues on the board, each assigned to the person who did it</span></div>
+  </div>
+</section>
+
+<!-- PART 05a -->
+<section class="slide split narrow" id="pulls" data-title="Working on GitHub">
+  <button class="plate" data-src="img/13-all-four-prs-merged.jpg" data-cap="The merged pull requests" aria-label="Open screenshot: merged pull requests">
+    <img src="img/13-all-four-prs-merged.jpg" alt="Merged pull requests list" style="object-position: 50% 30%">
+    <span class="zoom">View full</span>
+  </button>
+  <div class="panel">
+    <span class="vert">GitHub · 4:15–6:00</span>
+    <div class="part"><small>Part.</small><b>05</b></div>
+    <span class="speaker">Jerome · repository and pull requests</span>
+    <h2 class="title">Own branch, own pull request, someone else approves.</h2>
+    <ul class="rows">
+      <li><a class="n" href="https://github.com/zaiddan27/devasc-ip-address-app/pull/1" target="_blank" rel="noopener">#1</a><span>IP detection, provider details and CI</span><span class="meta">Jerome → John Patrick</span></li>
+      <li><a class="n" href="https://github.com/zaiddan27/devasc-ip-address-app/pull/2" target="_blank" rel="noopener">#2</a><span>IP classification and subnet calculator</span><span class="meta">Francis → John Patrick</span></li>
+      <li><a class="n" href="https://github.com/zaiddan27/devasc-ip-address-app/pull/4" target="_blank" rel="noopener">#4</a><span>IP/domain lookup and README</span><span class="meta">John Patrick → Elijah</span></li>
+      <li><a class="n" href="https://github.com/zaiddan27/devasc-ip-address-app/pull/5" target="_blank" rel="noopener">#5</a><span>Tables, menu and JSON/CSV export</span><span class="meta">Elijah → Francis</span></li>
+      <li><a class="n" href="https://github.com/zaiddan27/devasc-ip-address-app/pull/6" target="_blank" rel="noopener">#6</a><span>Rename to IP_PAPI and redesign</span><span class="meta">Jerome → Elijah, after merge</span></li>
+    </ul>
+    <div class="links">
+      <a href="https://github.com/zaiddan27/devasc-ip-address-app/settings/access" target="_blank" rel="noopener">Collaborators (owner sign-in)</a>
+      <a href="https://github.com/zaiddan27/devasc-ip-address-app/branches/all" target="_blank" rel="noopener">Branches</a>
+      <a href="https://github.com/zaiddan27/devasc-ip-address-app/pulls?q=is%3Apr" target="_blank" rel="noopener">All pull requests</a>
+    </div>
+    <div class="figure"><strong>6</strong><span>pull requests: five merged, one closed and redone</span></div>
+  </div>
+</section>
+
+<!-- PART 05b -->
+<section class="slide split narrow flip" id="reviews" data-title="Reviews and a correction">
+  <div class="stack">
+    <button class="plate" data-src="img/09-johnpatrick-approves-pr2.png" data-cap="John Patrick checks the subnet math by hand and approves #2" aria-label="Open screenshot: approval on pull request 2">
+      <img src="img/09-johnpatrick-approves-pr2.png" alt="Approval review on pull request 2" style="object-position: 30% 12%">
+      <span class="zoom">Approval · #2</span>
+    </button>
+    <button class="plate" data-src="img/07-elijah-pr5-opened-review-requested.jpg" data-cap="Elijah opens his own pull request #5 after #3 was closed" aria-label="Open screenshot: pull request 5">
+      <img src="img/07-elijah-pr5-opened-review-requested.jpg" alt="Pull request 5 opened by Elijah" style="object-position: 40% 25%">
+      <span class="zoom">Redo · #5</span>
+    </button>
+  </div>
+  <div class="panel">
+    <span class="vert">GitHub · reviews</span>
+    <div class="part"><small>Part.</small><b>05</b></div>
+    <span class="speaker">Jerome · reviews and one correction</span>
+    <h2 class="title">Reviews were real checks, and we fixed our own mistake.</h2>
+    <p class="copy">On <b>#2</b>, John Patrick checked 192.168.10.0/26 by hand before approving. Elijah's work was first opened as <b>#3 from John Patrick's account</b>. We closed it, and Elijah opened his own <b>#5</b>, so the history shows who submitted each part.</p>
+    <div class="links">
+      <a href="https://github.com/zaiddan27/devasc-ip-address-app/pull/2#pullrequestreview" target="_blank" rel="noopener">Review on #2</a>
+      <a href="https://github.com/zaiddan27/devasc-ip-address-app/pull/3" target="_blank" rel="noopener">#3 (closed)</a>
+      <a href="https://github.com/zaiddan27/devasc-ip-address-app/pull/5" target="_blank" rel="noopener">#5</a>
+    </div>
+    <div class="figure"><strong>4<i>/</i>4</strong><span>feature pull requests approved by a different member before merging</span></div>
+  </div>
+</section>
+
+<!-- PART 05c -->
+<section class="slide split narrow" id="tests" data-title="Automated tests">
+  <button class="plate" data-src="img/14-actions-tests-passed-after-each-merge.jpg" data-cap="GitHub Actions: the Tests workflow passed after every merge into main" aria-label="Open screenshot: Actions runs">
+    <img src="img/14-actions-tests-passed-after-each-merge.jpg" alt="GitHub Actions workflow runs, all passing" style="object-position: 55% 35%">
+    <span class="zoom">View full</span>
+  </button>
+  <div class="panel">
+    <span class="vert">GitHub · Actions</span>
+    <div class="part"><small>Part.</small><b>05</b></div>
+    <span class="speaker">Jerome · automated tests</span>
+    <h2 class="title">Every push and pull request runs the tests.</h2>
+    <div class="code">
+      <div class="code-head"><span>.github/workflows/tests.yml</span><a href="https://github.com/zaiddan27/devasc-ip-address-app/blob/main/.github/workflows/tests.yml" target="_blank" rel="noopener">Open</a></div>
+<pre><code class="language-yaml">on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements-dev.txt
+      - run: pytest</code></pre>
+    </div>
+    <div class="links"><a href="https://github.com/zaiddan27/devasc-ip-address-app/actions" target="_blank" rel="noopener">Actions runs</a></div>
+    <div class="figure"><strong>82</strong><span>tests, all offline: the API calls are mocked</span></div>
+  </div>
+</section>
+
+<!-- PART 05d -->
+<section class="slide split narrow flip" id="board" data-title="Board and contributors">
+  <button class="plate" data-src="img/15-main-commit-history.jpg" data-cap="Commit history on main" aria-label="Open screenshot: commit history">
+    <img src="img/15-main-commit-history.jpg" alt="Commit history on main" style="object-position: 40% 30%">
+    <span class="zoom">View full</span>
+  </button>
+  <div class="panel">
+    <span class="vert">GitHub · board</span>
+    <div class="part"><small>Part.</small><b>05</b></div>
+    <span class="speaker">Jerome · board and contributors</span>
+    <h2 class="title">Every task on the board. Every member in the history.</h2>
+    <p class="copy">The project board holds <b>14 issues</b>: eight done tasks linked to their pull requests, the video task, and five backlog ideas. The commit history and Insights show <b>all four of us</b> committing from our own accounts.</p>
+    <div class="links">
+      <a href="https://github.com/users/zaiddan27/projects/1" target="_blank" rel="noopener">Project board</a>
+      <a href="https://github.com/zaiddan27/devasc-ip-address-app/graphs/contributors" target="_blank" rel="noopener">Contributors</a>
+      <a href="https://github.com/zaiddan27/devasc-ip-address-app/commits/main" target="_blank" rel="noopener">Commit history</a>
+    </div>
+    <div class="figure"><strong>17</strong><span>commits on main, plus 5 merge commits</span></div>
+  </div>
+</section>
+
+<!-- PART 06a -->
+<section class="slide split" id="demo-ip" data-title="Demo: my public IP">
+  <button class="plate" data-src="img/18-system-my-public-ip.png" data-cap="Option 1, My public IP" aria-label="Open screenshot: option 1">
+    <img src="img/18-system-my-public-ip.png" alt="IP_PAPI option 1 output" style="object-position: 25% 62%">
+    <span class="zoom">View full</span>
+  </button>
+  <div class="panel">
+    <span class="vert">Live demo · 6:00–9:30</span>
+    <div class="part"><small>Part.</small><b>06</b></div>
+    <span class="speaker">Jerome · option 1</span>
+    <h2 class="title">Our public IP, and a calm answer when IPv6 is missing.</h2>
+    <div class="keys"><kbd>python main.py</kbd><span class="then">then</span><kbd>1</kbd></div>
+    <div class="code">
+      <div class="code-head"><span>ip_info.py · get_ip_details()</span><a href="https://github.com/zaiddan27/devasc-ip-address-app/blob/main/ip_info.py" target="_blank" rel="noopener">Open</a></div>
+<pre><code class="language-python">details = _ipapi_co_details(ip)
+if details is None:
+    details = _ip_api_com_details(ip)
+if details is None:
+    raise ConnectionError(
+        "Could not get IP details: both ipapi.co and ip-api.com are "
+        "unreachable or returned an error. ..."
+    )</code></pre>
+    </div>
+    <div class="figure"><strong>AS17639</strong><span>our ISP's network, read live from ipapi.co</span></div>
+  </div>
+</section>
+
+<!-- PART 06b -->
+<section class="slide split flip" id="demo-lookup" data-title="Demo: lookup">
+  <div class="stack">
+    <button class="plate" data-src="img/19-system-lookup-8888.png" data-cap="Option 2: 8.8.8.8 is Google LLC, AS15169" aria-label="Open screenshot: lookup 8.8.8.8">
+      <img src="img/19-system-lookup-8888.png" alt="Lookup of 8.8.8.8" style="object-position: 30% 58%">
+      <span class="zoom">8.8.8.8</span>
+    </button>
+    <button class="plate" data-src="img/20-system-lookup-domain-and-invalid-input.png" data-cap="Option 2: a domain lookup, then an invalid IP with the ERROR label" aria-label="Open screenshot: domain and invalid input">
+      <img src="img/20-system-lookup-domain-and-invalid-input.png" alt="Domain lookup and invalid input" style="object-position: 30% 78%">
+      <span class="zoom">Invalid input</span>
+    </button>
+  </div>
+  <div class="panel">
+    <span class="vert">Live demo · lookup</span>
+    <div class="part"><small>Part.</small><b>06</b></div>
+    <span class="speaker">John Patrick · option 2</span>
+    <h2 class="title">Any IP, domain or URL. Bad input gets an error, not a crash.</h2>
+    <div class="keys"><kbd>2</kbd><kbd>8.8.8.8</kbd><span class="then">·</span><kbd>2</kbd><kbd>cisco.com</kbd><span class="then">·</span><kbd>2</kbd><kbd>999.1.1.1</kbd></div>
+    <div class="code">
+      <div class="code-head"><span>lookup.py · resolve_target()</span><a href="https://github.com/zaiddan27/devasc-ip-address-app/blob/main/lookup.py" target="_blank" rel="noopener">Open</a></div>
+<pre><code class="language-python">try:
+    return str(ipaddress.ip_address(host))
+except ValueError:
+    pass
+
+octets = host.split(".")
+if len(octets) == 4 and all(part.isdigit() for part in octets):
+    raise ValueError(f"'{target}' is not a valid IP address.")
+
+results = socket.getaddrinfo(host, None)</code></pre>
+    </div>
+  </div>
+</section>
+
+<!-- PART 06c -->
+<section class="slide split" id="demo-tools" data-title="Demo: network tools">
+  <div class="stack">
+    <button class="plate" data-src="img/21-system-classify-addresses.png" data-cap="Option 3: 10.0.0.5 is Private; Google's IPv6 DNS is Public" aria-label="Open screenshot: classify">
+      <img src="img/21-system-classify-addresses.png" alt="Address classification output" style="object-position: 30% 40%">
+      <span class="zoom">Classify</span>
+    </button>
+    <button class="plate" data-src="img/22-system-subnet-calculator.png" data-cap="Option 4: 192.168.10.0/26 and the network-bits gauge" aria-label="Open screenshot: subnet">
+      <img src="img/22-system-subnet-calculator.png" alt="Subnet calculator output" style="object-position: 25% 72%">
+      <span class="zoom">Subnet</span>
+    </button>
+  </div>
+  <div class="panel">
+    <span class="vert">Live demo · tools</span>
+    <div class="part"><small>Part.</small><b>06</b></div>
+    <span class="speaker">Francis · options 3 and 4</span>
+    <h2 class="title">Offline subnetting, checked against the math we do by hand.</h2>
+    <div class="keys"><kbd>3</kbd><kbd>10.0.0.5</kbd><span class="then">·</span><kbd>4</kbd><kbd>192.168.10.0/26</kbd></div>
+    <div class="code">
+      <div class="code-head"><span>subnet_tools.py · subnet_info()</span><a href="https://github.com/zaiddan27/devasc-ip-address-app/blob/main/subnet_tools.py" target="_blank" rel="noopener">Open</a></div>
+<pre><code class="language-python">network = ipaddress.ip_network(text, strict=False)
+total_addresses = network.num_addresses
+
+if total_addresses &lt;= 2:      # /31, /32: all usable
+    usable_hosts = total_addresses
+else:
+    first_host = network[0] + 1
+    last_host = network[-1] - 1
+    usable_hosts = total_addresses - 2</code></pre>
+    </div>
+    <div class="figure"><strong>62</strong><span>usable hosts in /26: 26 network bits, 6 host bits</span></div>
+  </div>
+</section>
+
+<!-- PART 06d -->
+<section class="slide split narrow flip" id="demo-export" data-title="Demo: export">
+  <button class="plate" data-src="img/23-system-export-json-csv.png" data-cap="Option 5: export the last result to JSON and CSV" aria-label="Open screenshot: export">
+    <img src="img/23-system-export-json-csv.png" alt="Export to JSON and CSV" style="object-position: 30% 55%">
+    <span class="zoom">View full</span>
+  </button>
+  <div class="panel">
+    <span class="vert">Live demo · export</span>
+    <div class="part"><small>Part.</small><b>06</b></div>
+    <span class="speaker">Elijah · option 5</span>
+    <h2 class="title">One clean layout, and results saved for a ticket.</h2>
+    <div class="keys"><kbd>5</kbd><kbd>json</kbd><span class="then">·</span><kbd>5</kbd><kbd>csv</kbd></div>
+    <div class="code">
+      <div class="code-head"><span>ui.py · export_json()</span><a href="https://github.com/zaiddan27/devasc-ip-address-app/blob/main/ui.py" target="_blank" rel="noopener">Open</a></div>
+<pre><code class="language-python">target = Path(path) if path else _default_export_path("json")
+target.parent.mkdir(parents=True, exist_ok=True)
+with open(target, "w", encoding="utf-8") as f:
+    json.dump(data, f, indent=2, ensure_ascii=False)
+return str(target)</code></pre>
+    </div>
+    <div class="figure"><strong>2</strong><span>formats: JSON and CSV, saved in the exports folder</span></div>
+  </div>
+</section>
+
+<!-- PART 07 -->
+<section class="slide sheet-full" id="code" data-title="Code and docs">
+  <div class="panel">
+    <span class="vert">Code · 9:30–11:00</span>
+    <div class="grid2">
+      <div style="display:flex;flex-direction:column;gap:1.3cqw;min-width:0">
+        <div class="part"><small>Part.</small><b>07</b></div>
+        <span class="speaker">John Patrick</span>
+        <h2 class="title">One file per feature, one agreed interface.</h2>
+        <ul class="rows">
+          <li><a class="n" href="https://github.com/zaiddan27/devasc-ip-address-app/blob/main/ip_info.py" target="_blank" rel="noopener">py</a><span>ip_info.py</span><span class="meta">Jerome</span></li>
+          <li><a class="n" href="https://github.com/zaiddan27/devasc-ip-address-app/blob/main/lookup.py" target="_blank" rel="noopener">py</a><span>lookup.py</span><span class="meta">John Patrick</span></li>
+          <li><a class="n" href="https://github.com/zaiddan27/devasc-ip-address-app/blob/main/subnet_tools.py" target="_blank" rel="noopener">py</a><span>subnet_tools.py</span><span class="meta">Francis</span></li>
+          <li><a class="n" href="https://github.com/zaiddan27/devasc-ip-address-app/blob/main/ui.py" target="_blank" rel="noopener">py</a><span>ui.py and main.py</span><span class="meta">Elijah</span></li>
+          <li><a class="n" href="https://github.com/zaiddan27/devasc-ip-address-app/tree/main/tests" target="_blank" rel="noopener">82</a><span>tests/, one file per module</span><span class="meta">all</span></li>
+        </ul>
+        <div class="links">
+          <a href="https://github.com/zaiddan27/devasc-ip-address-app/blob/main/README.md" target="_blank" rel="noopener">README</a>
+          <a href="https://github.com/zaiddan27/devasc-ip-address-app/blob/main/docs/INTERFACES.md" target="_blank" rel="noopener">docs/INTERFACES.md</a>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:1.3cqw;min-width:0;min-height:0">
+        <p class="copy">Before coding, we agreed what each function takes and returns. That is why four people could build in parallel and merge without conflicts.</p>
+        <div class="code">
+          <div class="code-head"><span>Summary of docs/INTERFACES.md</span><a href="https://github.com/zaiddan27/devasc-ip-address-app/blob/main/docs/INTERFACES.md" target="_blank" rel="noopener">Open</a></div>
+<pre><code class="language-python">get_public_ipv4()        -&gt; IPv4 string or None
+get_public_ipv6()        -&gt; IPv6 string or None
+get_ip_details(ip=None)  -&gt; IP, ISP, ASN, Country, ..., Source
+resolve_target(target)   -&gt; IP string, ValueError if invalid
+lookup(target)           -&gt; Query, IP, then the details
+classify_address(addr)   -&gt; Address, Version, Type
+subnet_info(cidr)        -&gt; Network, Netmask, Wildcard, ...
+show_table(title, data)  -&gt; prints the result, never raises</code></pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PART 08 -->
+<section class="slide split narrow" id="backlog" data-title="Backlog">
+  <button class="plate" data-src="img/02-jerome-pr1-commits.jpg" data-cap="Commits on pull request #1; the next version starts from the backlog" aria-label="Open screenshot: pull requests">
+    <img src="img/02-jerome-pr1-commits.jpg" alt="Commits on the first pull request" style="object-position: 45% 40%">
+    <span class="zoom">View full</span>
+  </button>
+  <div class="panel">
+    <span class="vert">Backlog · 11:00–12:00</span>
+    <div class="part"><small>Part.</small><b>08</b></div>
+    <span class="speaker">Francis</span>
+    <h2 class="title">What Project Activity 4 starts from.</h2>
+    <ul class="rows">
+      <li><a class="n" href="https://github.com/zaiddan27/devasc-ip-address-app/issues/16" target="_blank" rel="noopener">#16</a><span>Web or desktop version</span></li>
+      <li><a class="n" href="https://github.com/zaiddan27/devasc-ip-address-app/issues/17" target="_blank" rel="noopener">#17</a><span>Show the IP's location on a map</span></li>
+      <li><a class="n" href="https://github.com/zaiddan27/devasc-ip-address-app/issues/18" target="_blank" rel="noopener">#18</a><span>Batch lookup from a file</span></li>
+      <li><a class="n" href="https://github.com/zaiddan27/devasc-ip-address-app/issues/19" target="_blank" rel="noopener">#19</a><span>Reverse DNS, ping and traceroute</span></li>
+      <li><a class="n" href="https://github.com/zaiddan27/devasc-ip-address-app/issues/20" target="_blank" rel="noopener">#20</a><span>Lookup history</span></li>
+    </ul>
+    <div class="links"><a href="https://github.com/zaiddan27/devasc-ip-address-app/issues?q=label%3Abacklog" target="_blank" rel="noopener">Backlog issues</a></div>
+    <div class="figure"><strong>5</strong><span>ideas, each an issue with an owner</span></div>
+  </div>
+</section>
+
+<!-- PART 09 -->
+<section class="slide sheet-full" id="reflection" data-title="Reflection">
+  <div class="panel">
+    <span class="vert">Reflection · 12:00–14:00</span>
+    <div class="part"><small>Part.</small><b>09</b></div>
+    <span class="speaker">All four · what went wrong and what we did</span>
+    <h2 class="title">Four real problems, four fixes.</h2>
+    <div class="grid2" style="margin-top:.6cqw">
+      <ul class="rows">
+        <li><span class="n">01</span><span><b>Wrong account.</b> Elijah's pull request was opened as #3 from John Patrick's account. We closed it and Elijah opened #5.</span></li>
+        <li><span class="n">02</span><span><b>Wrong folder.</b> The UI test file landed outside tests/, so the test runner missed it. It was moved twice until it ran.</span></li>
+      </ul>
+      <ul class="rows">
+        <li><span class="n">03</span><span><b>No IPv6 at home.</b> The app now says so instead of failing, and we tested IPv6 on a mobile hotspot.</span></li>
+        <li><span class="n">04</span><span><b>"Private" was too broad.</b> Python counts documentation ranges as private. We limited Private to RFC 1918.</span></li>
+      </ul>
+    </div>
+    <div class="mini-plates" style="margin-top:auto">
+      <button class="plate" data-src="img/05-pr3-ui-output-opened-by-pathricky-REDO.png" data-cap="#3: opened from the wrong account, then closed" aria-label="Open screenshot: pull request 3"><img src="img/05-pr3-ui-output-opened-by-pathricky-REDO.png" alt="Pull request 3" style="object-position: 30% 15%"><span class="zoom">#3</span></button>
+      <button class="plate" data-src="img/10-francis-approves-pr5.png" data-cap="Francis approves Elijah's #5" aria-label="Open screenshot: approval on 5"><img src="img/10-francis-approves-pr5.png" alt="Approval on pull request 5" style="object-position: 30% 20%"><span class="zoom">Approval · #5</span></button>
+      <button class="plate" data-src="img/08-elijah-approves-pr4.jpg" data-cap="Elijah tests the lookup and approves #4" aria-label="Open screenshot: approval on 4"><img src="img/08-elijah-approves-pr4.jpg" alt="Approval on pull request 4" style="object-position: 40% 60%"><span class="zoom">Approval · #4</span></button>
+    </div>
+  </div>
+</section>
+
+<!-- PART 10 -->
+<section class="slide cover" id="closing" data-title="Closing">
+  <button class="plate" data-src="img/14-actions-tests-passed-after-each-merge.jpg" data-cap="Every test run on GitHub Actions passed after our merges" aria-label="Open screenshot: Actions runs">
+    <img src="img/14-actions-tests-passed-after-each-merge.jpg" alt="GitHub Actions runs" style="object-position: 55% 40%">
+  </button>
+  <div class="mark">T H A N K &nbsp; Y O U</div>
+  <div class="byline">IP_PAPI<br>Never Grow Old</div>
+  <div class="panel index">
+    <div class="part"><small>Part.</small><b>10</b></div>
+    <span class="speaker">John Patrick</span>
+    <h2 class="title">Built together through branches, pull requests and reviews.</h2>
+    <ul class="rows" style="margin-top:.6cqw">
+      <li><a class="n" href="https://github.com/zaiddan27/devasc-ip-address-app" target="_blank" rel="noopener">Repo</a><span>github.com/zaiddan27/devasc-ip-address-app</span></li>
+      <li><a class="n" href="https://github.com/users/zaiddan27/projects/1" target="_blank" rel="noopener">Board</a><span>Every task and owner</span></li>
+      <li><a class="n" href="https://github.com/zaiddan27/devasc-ip-address-app/pulls?q=is%3Apr" target="_blank" rel="noopener">PRs</a><span>All six pull requests</span></li>
+      <li><a class="n" href="https://github.com/zaiddan27/devasc-ip-address-app/actions" target="_blank" rel="noopener">Tests</a><span>Every run on GitHub Actions</span></li>
+    </ul>
+  </div>
+</section>
+
+</main>
+
+<nav class="bar" aria-label="Slide controls">
+  <button type="button" id="prev">Prev</button>
+  <div class="gauge" id="gauge" aria-hidden="true"></div>
+  <span class="count" id="count">01 / 17</span>
+  <button type="button" id="next">Next</button>
+  <button type="button" id="full">Full screen</button>
+  <span class="hint">Arrow keys to move · click a picture to enlarge</span>
+</nav>
+</div>
+
+<div class="lightbox" id="lightbox" hidden>
+  <img id="lb-img" alt="">
+  <p id="lb-cap"></p>
+  <button type="button" id="lb-close">Close</button>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js" data-manual></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-yaml.min.js"></script>
+<script>
+(function () {
+  var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+  var gauge = document.getElementById('gauge');
+  var count = document.getElementById('count');
+  var prev = document.getElementById('prev');
+  var next = document.getElementById('next');
+  var cur = 0;
+
+  slides.forEach(function () { gauge.appendChild(document.createElement('i')); });
+  var cells = gauge.querySelectorAll('i');
+
+  function pad(n) { return (n < 10 ? '0' : '') + n; }
+  function show(i, push) {
+    cur = Math.max(0, Math.min(slides.length - 1, i));
+    slides.forEach(function (s, k) { s.classList.toggle('is-current', k === cur); });
+    cells.forEach(function (c, k) { c.classList.toggle('on', k <= cur); });
+    count.textContent = pad(cur + 1) + ' / ' + pad(slides.length);
+    prev.disabled = cur === 0;
+    next.disabled = cur === slides.length - 1;
+    if (push && location.hash !== '#' + slides[cur].id) {
+      history.replaceState(null, '', '#' + slides[cur].id);
+    }
+  }
+  function fromHash() {
+    var id = location.hash.slice(1);
+    var i = slides.findIndex(function (s) { return s.id === id; });
+    show(i >= 0 ? i : 0, false);
+  }
+  prev.addEventListener('click', function () { show(cur - 1, true); });
+  next.addEventListener('click', function () { show(cur + 1, true); });
+  window.addEventListener('hashchange', fromHash);
+
+  var lb = document.getElementById('lightbox');
+  var lbImg = document.getElementById('lb-img');
+  var lbCap = document.getElementById('lb-cap');
+  function openLb(src, cap) { lbImg.src = src; lbImg.alt = cap; lbCap.textContent = cap; lb.hidden = false; document.getElementById('lb-close').focus(); }
+  function closeLb() { lb.hidden = true; lbImg.removeAttribute('src'); }
+  document.querySelectorAll('.plate').forEach(function (p) {
+    p.addEventListener('click', function () { openLb(p.getAttribute('data-src'), p.getAttribute('data-cap') || ''); });
+  });
+  document.getElementById('lb-close').addEventListener('click', closeLb);
+  lb.addEventListener('click', function (e) { if (e.target === lb) closeLb(); });
+
+  document.addEventListener('keydown', function (e) {
+    if (!lb.hidden) { if (e.key === 'Escape') closeLb(); return; }
+    if (e.target.closest && e.target.closest('a, button') && (e.key === ' ' || e.key === 'Enter')) return;
+    if (['ArrowRight', 'PageDown', ' '].indexOf(e.key) >= 0) { e.preventDefault(); show(cur + 1, true); }
+    else if (['ArrowLeft', 'PageUp'].indexOf(e.key) >= 0) { e.preventDefault(); show(cur - 1, true); }
+    else if (e.key === 'Home') { show(0, true); }
+    else if (e.key === 'End') { show(slides.length - 1, true); }
+  });
+
+  document.getElementById('full').addEventListener('click', function () {
+    var el = document.documentElement;
+    try {
+      if (!document.fullscreenElement && el.requestFullscreen) { el.requestFullscreen().catch(function () {}); }
+      else if (document.exitFullscreen) { document.exitFullscreen().catch(function () {}); }
+    } catch (err) { /* full screen is optional */ }
+  });
+
+  fromHash();
+  if (window.Prism) { window.Prism.highlightAll(); }
+})();
+</script>
+
+</body>
+</html>
