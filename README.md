@@ -41,6 +41,22 @@ pip install -r requirements.txt
 python main.py
 ```
 
+## Desktop window (GUI)
+
+IP_PAPI also has a desktop window with the same five features: a sidebar menu, an input box with an example filled in, the result as a label/value list, a network-bits gauge for subnets, and Save as JSON / Save as CSV buttons.
+
+- **No install (Windows):** download `IP_PAPI.exe` from the repository's [Releases](https://github.com/zaiddan27/devasc-ip-address-app/releases) page and double-click it.
+- **From the code:** `python gui.py` (Tkinter comes with Python, so nothing extra to install).
+- **Keyboard:** Ctrl+1 to Ctrl+5 switch features, Enter runs the current one.
+
+The window calls the same modules as the terminal app, so every result matches. To rebuild the `.exe` yourself:
+
+```bash
+pip install pyinstaller
+pyinstaller --onefile --windowed --name IP_PAPI gui.py
+# the app is written to dist/IP_PAPI.exe
+```
+
 ## Using the menu
 
 ```
@@ -157,7 +173,8 @@ Exported files go to the `exports/` folder in the project root (created automati
 ## Project structure
 
 ```
-main.py           Menu that ties the features together
+main.py           Terminal menu that ties the features together
+gui.py            Desktop window (Tkinter) for the same features
 ip_info.py        Public IP detection and provider details (REST APIs)
 lookup.py         Look up any IP address or domain name
 subnet_tools.py   Offline IP classification and subnet calculator (ipaddress module)
@@ -210,10 +227,11 @@ A GitHub Actions workflow runs `pytest` automatically on every push and every pu
 
 ## Backlog (Project Activity 4)
 
-- Web or desktop version
+- Web version (the desktop window is done: see "Desktop window (GUI)")
 - Show the IP's approximate location on a map
 - Batch lookup from a file of IPs
 - Reverse DNS, ping latency and traceroute
+- Lookup history, to re-open and re-export earlier results
 
 ## Team
 

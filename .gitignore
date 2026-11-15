@@ -13,3 +13,8 @@ exports/
 .idea/
 .DS_Store
 Thumbs.db
+
+# Desktop app build output (PyInstaller)
+build/
+dist/
+*.spec
