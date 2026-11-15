@@ -382,7 +382,7 @@ a { color: inherit; }
       <li><a href="#features"><b>Part.03</b><span>Five features<em>Elijah</em></span></a></li>
       <li><a href="#roles"><b>Part.04</b><span>Roles and strategy<em>Elijah</em></span></a></li>
       <li><a href="#pulls"><b>Part.05</b><span>Working on GitHub<em>Jerome</em></span></a></li>
-      <li><a href="#demo-ip"><b>Part.06</b><span>Live demo<em>All four</em></span></a></li>
+      <li><a href="#live"><b>Part.06</b><span>Live demo<em>All four</em></span></a></li>
       <li><a href="#code"><b>Part.07</b><span>Code and docs<em>John Patrick</em></span></a></li>
       <li><a href="#backlog"><b>Part.08</b><span>Backlog<em>Francis</em></span></a></li>
       <li><a href="#reflection"><b>Part.09</b><span>Reflection<em>All four</em></span></a></li>
@@ -582,6 +582,45 @@ jobs:
   </div>
 </section>
 
+<!-- PART 06 live -->
+<section class="slide sheet-full" id="live" data-title="Live demo">
+  <div class="panel">
+    <span class="vert">Live demo · 6:00–9:30</span>
+    <div class="grid2">
+      <div style="display:flex;flex-direction:column;gap:1.3cqw;min-width:0">
+        <div class="part"><small>Part.</small><b>06</b></div>
+        <span class="speaker">All four · each runs their own feature</span>
+        <h2 class="title">Run the real system, right from this page.</h2>
+        <ul class="rows">
+          <li><a class="n" href="https://zaiddan27.github.io/devasc-ip-address-app/demo/?f=my_ip" target="_blank" rel="noopener">01</a><span>My public IP</span><span class="meta">Jerome</span></li>
+          <li><a class="n" href="https://zaiddan27.github.io/devasc-ip-address-app/demo/?f=lookup" target="_blank" rel="noopener">02</a><span>Look up an IP or domain</span><span class="meta">John Patrick</span></li>
+          <li><a class="n" href="https://zaiddan27.github.io/devasc-ip-address-app/demo/?f=classify" target="_blank" rel="noopener">03</a><span>Classify an IP address</span><span class="meta">Francis</span></li>
+          <li><a class="n" href="https://zaiddan27.github.io/devasc-ip-address-app/demo/?f=subnet" target="_blank" rel="noopener">04</a><span>Subnet calculator</span><span class="meta">Francis</span></li>
+          <li><a class="n" href="https://zaiddan27.github.io/devasc-ip-address-app/demo/?f=export" target="_blank" rel="noopener">05</a><span>Export to JSON or CSV</span><span class="meta">Elijah</span></li>
+        </ul>
+        <div class="links">
+          <a href="https://zaiddan27.github.io/devasc-ip-address-app/demo/" target="_blank" rel="noopener">Open the live demo</a>
+          <a href="https://github.com/zaiddan27/devasc-ip-address-app/pull/21" target="_blank" rel="noopener">Desktop app, PR #21</a>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:1.3cqw;min-width:0;min-height:0">
+        <p class="copy">The demo page downloads <b>ip_info.py</b>, <b>lookup.py</b> and <b>subnet_tools.py</b> straight from <b>main</b> on GitHub and runs them with Python inside the browser. Nothing is rewritten, so what you see is our code. The next slides are screenshots of the terminal app, kept as a backup if the network fails.</p>
+        <div class="code">
+          <div class="code-head"><span>Summary of demo/worker.js</span><a href="https://github.com/zaiddan27/devasc-ip-address-app/blob/gh-pages/demo/worker.js" target="_blank" rel="noopener">Open</a></div>
+<pre><code class="language-python">for name in ["ip_info.py", "lookup.py", "subnet_tools.py"]:
+    download from raw.githubusercontent.com/.../main/name
+
+import ip_info, lookup, subnet_tools   # the real modules
+
+subnet_tools.subnet_info("192.168.10.0/26")
+lookup.lookup("cisco.com")   # DNS over HTTPS in a browser</code></pre>
+        </div>
+        <div class="figure"><strong>0</strong><span>installs needed: open the link in any browser</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- PART 06a -->
 <section class="slide split" id="demo-ip" data-title="Demo: my public IP">
   <button class="plate" data-src="img/18-system-my-public-ip.png" data-cap="Option 1, My public IP" aria-label="Open screenshot: option 1">
@@ -589,7 +628,7 @@ jobs:
     <span class="zoom">View full</span>
   </button>
   <div class="panel">
-    <span class="vert">Live demo · 6:00–9:30</span>
+    <span class="vert">Backup · option 1</span>
     <div class="part"><small>Part.</small><b>06</b></div>
     <span class="speaker">Jerome · option 1</span>
     <h2 class="title">Our public IP, and a calm answer when IPv6 is missing.</h2>
@@ -752,7 +791,7 @@ show_table(title, data)  -&gt; prints the result, never raises</code></pre>
     <span class="speaker">Francis</span>
     <h2 class="title">What Project Activity 4 starts from.</h2>
     <ul class="rows">
-      <li><a class="n" href="https://github.com/zaiddan27/devasc-ip-address-app/issues/16" target="_blank" rel="noopener">#16</a><span>Web or desktop version</span></li>
+      <li><a class="n" href="https://github.com/zaiddan27/devasc-ip-address-app/issues/16" target="_blank" rel="noopener">#16</a><span>Web version (desktop app is in PR #21)</span></li>
       <li><a class="n" href="https://github.com/zaiddan27/devasc-ip-address-app/issues/17" target="_blank" rel="noopener">#17</a><span>Show the IP's location on a map</span></li>
       <li><a class="n" href="https://github.com/zaiddan27/devasc-ip-address-app/issues/18" target="_blank" rel="noopener">#18</a><span>Batch lookup from a file</span></li>
       <li><a class="n" href="https://github.com/zaiddan27/devasc-ip-address-app/issues/19" target="_blank" rel="noopener">#19</a><span>Reverse DNS, ping and traceroute</span></li>
@@ -804,6 +843,7 @@ show_table(title, data)  -&gt; prints the result, never raises</code></pre>
       <li><a class="n" href="https://github.com/users/zaiddan27/projects/1" target="_blank" rel="noopener">Board</a><span>Every task and owner</span></li>
       <li><a class="n" href="https://github.com/zaiddan27/devasc-ip-address-app/pulls?q=is%3Apr" target="_blank" rel="noopener">PRs</a><span>All six pull requests</span></li>
       <li><a class="n" href="https://github.com/zaiddan27/devasc-ip-address-app/actions" target="_blank" rel="noopener">Tests</a><span>Every run on GitHub Actions</span></li>
+      <li><a class="n" href="https://zaiddan27.github.io/devasc-ip-address-app/demo/" target="_blank" rel="noopener">Demo</a><span>Try IP_PAPI in the browser</span></li>
     </ul>
   </div>
 </section>
