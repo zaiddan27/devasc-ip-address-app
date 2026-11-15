@@ -35,7 +35,10 @@ Offline only (Python's `ipaddress` module, no network).
 | `classify_address(address)` | dict: `Address`, `Version` (`"IPv4"`/`"IPv6"`), `Type`, plus for IPv6 `Expanded` | `ValueError` with a friendly message |
 | `subnet_info(cidr)` | dict: `Network`, `Version`, `Prefix length`, `Netmask`, `Wildcard`, `Broadcast`, `First host`, `Last host`, `Usable hosts`, `Total addresses` | `ValueError` with a friendly message |
 
-- `Type` is one of: `Loopback`, `Private`, `Link-local`, `Multicast`, `Reserved`, `Unspecified`, `Public`.
+- `Type` is one of: `Loopback`, `Unspecified`, `Link-local`, `Multicast`, `Shared (CGNAT)`, `Private`, `Reserved`, `Public`.
+  - `Private` means only RFC 1918 (10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16) and IPv6 Unique Local fc00::/7.
+  - `Shared (CGNAT)` is 100.64.0.0/10 (RFC 6598, carrier-grade NAT).
+  - `Reserved` covers other special-purpose blocks: documentation (192.0.2.0/24, 198.51.100.0/24, 203.0.113.0/24, 2001:db8::/32), benchmarking 198.18.0.0/15, 192.0.0.0/24, 240.0.0.0/4 and 255.255.255.255.
 - Accepts host bits set (`192.168.10.5/26` -> network `192.168.10.0/26`).
 - IPv6 has no broadcast: `Broadcast` is `"N/A (IPv6)"`. `/31` and `/32` (and IPv6 `/127`, `/128`) follow RFC 3021 (no network/broadcast subtraction).
 - Example: `192.168.10.0/26` -> Netmask `255.255.255.192`, Wildcard `0.0.0.63`, Broadcast `192.168.10.63`, First host `192.168.10.1`, Last host `192.168.10.62`, Usable hosts `62`, Total addresses `64`.
