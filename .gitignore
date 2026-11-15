@@ -6,8 +6,7 @@ venv/
 env/
 
 # Exports created by the app
-result.json
-result.csv
+exports/
 
 # Editors / OS
 .vscode/

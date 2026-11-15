@@ -4,7 +4,9 @@ Run with:  python main.py
 
 Each menu option calls a function from one module. Until a module's owner
 implements it, the function raises NotImplementedError and the menu shows
-"not implemented yet" instead of crashing.
+"not implemented yet" instead of crashing. The menu is also written to
+survive bad input, network failures and the user quitting with Ctrl+C or
+piped input running out (EOF) - none of that should ever print a traceback.
 """
 
 import ip_info
@@ -20,7 +22,15 @@ def option_my_ip():
     """1. Show this computer's public IPv4/IPv6 and provider details."""
     ipv4 = ip_info.get_public_ipv4()
     ipv6 = ip_info.get_public_ipv6()
-    details = ip_info.get_ip_details()
+
+    # get_ip_details() can fail (ConnectionError) even when the address
+    # lookups above succeeded, e.g. every provider API is down. Still show
+    # the IPv4/IPv6 we do have instead of losing the whole result.
+    try:
+        details = ip_info.get_ip_details()
+    except ConnectionError as exc:
+        details = {"Note": f"Provider details unavailable - {exc}"}
+
     result = {
         "IPv4": ipv4 or "not available",
         "IPv6": ipv6 or "not available on this network",
@@ -57,14 +67,18 @@ def option_subnet():
 def option_export():
     """5. Export the last result to JSON or CSV."""
     if last_result is None:
-        print("Nothing to export yet. Run one of options 1-4 first.")
+        ui.show_message("Nothing to export yet. Run one of options 1-4 first.", "warning")
         return None
+
     fmt = input("Format (json/csv): ").strip().lower()
     if fmt == "csv":
         path = ui.export_csv(last_result)
     else:
+        if fmt != "json":
+            ui.show_message("Unrecognised format, defaulting to json.", "warning")
         path = ui.export_json(last_result)
-    print(f"Saved to {path}")
+
+    ui.show_message(f"Saved to {path}", "success")
     return None
 
 
@@ -77,30 +91,53 @@ MENU = {
 }
 
 
+def show_menu():
+    """Print the numbered list of options below the header."""
+    print()
+    for key, (label, _) in MENU.items():
+        print(f"  {key}. {label}")
+    print("  0. Exit")
+
+
 def main():
     global last_result
+    ui.show_header()
+
     while True:
-        print("\n=== DevASC IP Address App ===")
-        for key, (label, _) in MENU.items():
-            print(f"  {key}. {label}")
-        print("  0. Exit")
-        choice = input("Choose an option: ").strip()
+        show_menu()
+        try:
+            choice = input("Choose an option: ").strip()
+        except (KeyboardInterrupt, EOFError):
+            # Ctrl+C, or piped input ran out - exit cleanly, no traceback.
+            print("\nGoodbye!")
+            break
 
         if choice == "0":
             print("Goodbye!")
             break
         if choice not in MENU:
-            print("Invalid choice, try again.")
+            ui.show_message("Invalid choice, try again.", "warning")
             continue
 
         try:
             result = MENU[choice][1]()
             if result is not None:
                 last_result = result
+        except (KeyboardInterrupt, EOFError):
+            # Can also happen inside an option, e.g. while typing an address.
+            print("\nGoodbye!")
+            break
         except NotImplementedError as exc:
-            print(f"Not implemented yet: {exc}")
+            # Expected while a teammate's module is still a stub.
+            ui.show_message(f"Not implemented yet: {exc}", "warning")
+        except ValueError as exc:
+            # Bad input the user typed (invalid IP, bad CIDR, etc.).
+            ui.show_message(f"Invalid input: {exc}", "error")
+        except ConnectionError as exc:
+            # A network/API call failed.
+            ui.show_message(f"Network error: {exc}", "error")
         except Exception as exc:  # keep the menu alive on any unexpected error
-            print(f"Error: {exc}")
+            ui.show_message(f"Error: {exc}", "error")
 
 
 if __name__ == "__main__":
