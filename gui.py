@@ -15,6 +15,7 @@ background thread so the window never freezes while an API answers.
 """
 
 import os
+import queue
 import sys
 import threading
 
@@ -322,9 +323,20 @@ class App:
                 outcome = ("error", f"Network error: {exc}")
             except Exception as exc:  # keep the window alive on anything unexpected
                 outcome = ("error", f"Error: {exc}")
-            self.root.after(0, lambda: self._finish(action, outcome))
+            results.put(outcome)  # never touch Tk from this thread
 
+        def poll():
+            # Tk is not thread-safe, so the main thread collects the result.
+            try:
+                outcome = results.get_nowait()
+            except queue.Empty:
+                self.root.after(50, poll)
+                return
+            self._finish(action, outcome)
+
+        results = queue.Queue()
         threading.Thread(target=work, daemon=True).start()
+        self.root.after(50, poll)
 
     def _finish(self, action, outcome):
         self.busy = False
